@@ -11,8 +11,10 @@ export interface StoryDiscoverySegmentInput {
 function priority(item: StoryDiscoverySegmentInput) { return item.candidateScore * 0.35 + item.audienceAppeal * 0.2 + item.emotionalValue * 0.15 + item.informationValue * 0.12 + item.novelty * 0.1 + item.visualQuality * 0.08; }
 function bucket(item: StoryDiscoverySegmentInput) {
   if (item.possibleRoles.some((role) => ["reaction", "conflict"].includes(role)) || item.subjects.some((subject) => /人物|人|游客|孩子|朋友|家人/.test(subject))) return "character";
-  if (item.informationValue >= 65) return "information";
+  if (item.actions.length > 0) return "action";
   if (item.emotionalValue >= 65) return "emotion";
+  if (item.subjects.length === 0 || item.possibleRoles.includes("context")) return "environment";
+  if (item.informationValue >= 65) return "information";
   if (item.possibleRoles.some((role) => ["transition", "context"].includes(role))) return "transition";
   return "visual";
 }
@@ -26,7 +28,7 @@ export function buildStoryDiscoveryInput(segments: VideoSegment[], scores: Recor
   const groups = new Map<string, StoryDiscoverySegmentInput[]>();
   eligible.forEach((item) => { const key = bucket(item); groups.set(key, [...(groups.get(key) ?? []), item]); });
   groups.forEach((items) => items.sort((a, b) => priority(b) - priority(a)));
-  const result: StoryDiscoverySegmentInput[] = []; const keys = ["character", "information", "emotion", "transition", "visual"];
-  while (result.length < limit && keys.some((key) => (groups.get(key)?.length ?? 0) > 0)) for (const key of keys) { const item = groups.get(key)?.shift(); if (item && result.length < limit) result.push(item); }
+  const result: StoryDiscoverySegmentInput[] = []; const keys = ["character", "action", "environment", "emotion", "information", "transition", "visual"]; const selectedScenes = new Set<string>();
+  while (result.length < limit && keys.some((key) => (groups.get(key)?.length ?? 0) > 0)) for (const key of keys) { const items = groups.get(key); if (!items?.length || result.length >= limit) continue; const diverseIndex = items.findIndex((item) => item.scene && !selectedScenes.has(item.scene)); const [item] = items.splice(diverseIndex >= 0 ? diverseIndex : 0, 1); result.push(item); if (item.scene) selectedScenes.add(item.scene); }
   return result;
 }

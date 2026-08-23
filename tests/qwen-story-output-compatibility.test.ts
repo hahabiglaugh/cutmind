@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { StoryDiscoverySegmentInput } from "../src/features/story-discovery/story-discovery-input.ts";
 import { adaptQwenStoryResponse, QWEN_STORY_OUTPUT_INSTRUCTION } from "../src/server/story/qwen-story-discovery-provider.ts";
+import { QwenStoryDiscoveryProvider } from "../src/server/story/qwen-story-discovery-provider.ts";
+import { STORY_DISCOVERY_MAX_ATTEMPTS, STORY_DISCOVERY_REQUEST_TIMEOUT_MS } from "../src/features/story-discovery/config.ts";
 import { validateStoryCandidates } from "../src/server/story/story-candidate-schema.ts";
 import { parseQwenJsonContent } from "../src/server/vision/qwen-json-request.ts";
 
@@ -20,3 +22,4 @@ test("single JSON code fence is parsed safely", () => { const parsed = parseQwen
 test("natural language is not guessed into JSON", () => assert.throws(() => parseQwenJsonContent(`这是结果：${JSON.stringify({ candidates: [candidate] })}`), SyntaxError));
 test("Qwen prompt includes the existing Story schema and exact field names", () => { assert.match(QWEN_STORY_OUTPUT_INSTRUCTION, /top-level JSON object MUST contain the key "candidates"/); assert.match(QWEN_STORY_OUTPUT_INSTRUCTION, /Do not return Markdown/); assert.match(QWEN_STORY_OUTPUT_INSTRUCTION, /"required":\["title","concept","storyType","hook","coreIdea"/); assert.match(QWEN_STORY_OUTPUT_INSTRUCTION, /Do not rename "structure" to "beats"/); });
 test("failed provider validation retains the active model in UI state", () => { const sourceCode = readFileSync(new URL("../src/features/project/project-session-context.tsx", import.meta.url), "utf8"); assert.match(sourceCode, /setStoryDiscovery\(\(current\) => \(\{ \.\.\.current, status: "error"/); });
+test("Story Discovery uses a 60s timeout and one total attempt", async () => { assert.equal(STORY_DISCOVERY_REQUEST_TIMEOUT_MS, 60_000); assert.equal(STORY_DISCOVERY_MAX_ATTEMPTS, 1); let calls = 0; const fetcher = async () => { calls += 1; return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ candidates: [{ title: "不完整" }] }) } }] }), { status: 200 }); }; await assert.rejects(new QwenStoryDiscoveryProvider("test", fetcher as typeof fetch, async () => {}).discover([source])); assert.equal(calls, 1); });
