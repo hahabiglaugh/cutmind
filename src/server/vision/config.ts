@@ -1,0 +1,13 @@
+export const PRIMARY_GEMINI_MODEL = "gemini-3.7-flash";
+export const FALLBACK_GEMINI_MODELS = ["gemini-3.6-flash"] as const;
+export const GEMINI_MODEL_CHAIN: readonly string[] = [PRIMARY_GEMINI_MODEL, ...FALLBACK_GEMINI_MODELS];
+export const geminiGenerateContentEndpoint = (model: string) => `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+export const VISION_PROVIDER_NAME = "gemini";
+export const GEMINI_REQUEST_TIMEOUT_MS = 45_000;
+export const GEMINI_MAX_ATTEMPTS = 3;
+export const GEMINI_BACKOFF_BASE_MS = [1_500, 4_000] as const;
+export const GEMINI_MAX_RETRY_AFTER_MS = 120_000;
+export const GEMINI_GLOBAL_CONCURRENCY = 2;
+export const DEFAULT_RATE_LIMIT_COOLDOWN_MS = 30_000;
+export const MAX_RATE_LIMIT_COOLDOWN_MS = 120_000;
+export const STORY_DISCOVERY_MAX_ATTEMPTS = 2;

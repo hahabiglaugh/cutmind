@@ -1,0 +1,2 @@
+export const MIN_EDITING_CLIP_DURATION = 0.8;
+export const EDITING_PLAN_DURATION_TOLERANCE = 0.2;

@@ -1,0 +1,3 @@
+export const SEGMENT_ANALYSIS_CONCURRENCY = 3;
+export const KEYFRAME_MAX_EDGE = 768;
+export const KEYFRAME_JPEG_QUALITY = 0.76;
