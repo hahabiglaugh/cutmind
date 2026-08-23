@@ -1,6 +1,6 @@
 import type { CandidateTier } from "@/domain/types";
 
-export const LOCAL_SCORING_CONCURRENCY = 4;
+export { MAX_LOCAL_VIDEO_PROCESSING_CONCURRENCY as LOCAL_SCORING_CONCURRENCY } from "../processing/config.ts";
 export const MAX_AUTO_AI_CANDIDATES = 60;
 export const CANDIDATE_FRAME_WIDTH = 64;
 export const CANDIDATE_FRAME_HEIGHT = 36;

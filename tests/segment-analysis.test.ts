@@ -20,14 +20,14 @@ test("rejects scores outside the schema range", () => {
   assert.throws(() => validateSegmentAnalysis({ ...valid, audienceAppeal: 101 }, metadata), /invalid scores/);
 });
 
-test("selects chronological 20, 50 and 80 percent keyframes", () => {
-  assert.deepEqual(selectKeyframeTimestamps({ startTime: 10, endTime: 20, duration: 10 }), [12, 15, 18]);
+test("selects at most two chronological keyframes", () => {
+  assert.deepEqual(selectKeyframeTimestamps({ startTime: 10, endTime: 20, duration: 10 }), [12.5, 17.5]);
 });
 
 test("segments up to 3s use one midpoint keyframe", () => assert.deepEqual(selectKeyframeTimestamps({ startTime: 2, endTime: 5, duration: 3 }), [3.5]));
-test("segments over 3s through 7s use two keyframes", () => assert.deepEqual(selectKeyframeTimestamps({ startTime: 10, endTime: 17, duration: 7 }).map((value) => Number(value.toFixed(2))), [12.1, 14.9]));
-test("segments over 7s through 15s use three keyframes", () => assert.deepEqual(selectKeyframeTimestamps({ startTime: 0, endTime: 15, duration: 15 }), [3, 7.5, 12]));
-test("segments over 15s still use at most three keyframes", () => assert.equal(selectKeyframeTimestamps({ startTime: 0, endTime: 30, duration: 30 }).length, 3));
+test("segments over 3s through 7s use two keyframes", () => assert.deepEqual(selectKeyframeTimestamps({ startTime: 10, endTime: 17, duration: 7 }).map((value) => Number(value.toFixed(2))), [11.75, 15.25]));
+test("segments over 7s through 15s use two keyframes", () => assert.deepEqual(selectKeyframeTimestamps({ startTime: 0, endTime: 15, duration: 15 }), [3.75, 11.25]));
+test("segments over 15s still use at most two keyframes", () => assert.equal(selectKeyframeTimestamps({ startTime: 0, endTime: 30, duration: 30 }).length, 2));
 
 test("analysis enum UI mappings are Chinese and complete", () => {
   assert.equal(analysisRoleLabels.hook, "开场钩子"); assert.equal(analysisRoleLabels.b_roll, "补充镜头");

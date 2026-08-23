@@ -5,6 +5,7 @@ import type { EditingPlan, SegmentAnalysisResult, SegmentCandidateScore, StoryCa
 import { extractSegmentKeyframes } from "@/features/analysis/keyframe-extraction";
 import { runAnalysisQueue } from "@/features/analysis/sequential-analysis-queue";
 import { SEGMENT_ANALYSIS_CONCURRENCY } from "@/features/analysis/config";
+import { MAX_ANALYZE_SEGMENT_REQUEST_BYTES, MAX_LOCAL_VIDEO_PROCESSING_CONCURRENCY } from "@/features/processing/config";
 import { measureSegmentLocally, type LocalCandidateMeasurement } from "@/features/candidate-discovery/browser-candidate-scoring";
 import { duplicatePenaltyForSimilarity, fingerprintSimilarity, scoreCandidate, selectAutomaticCandidates } from "@/features/candidate-discovery/candidate-scoring";
 import { LOCAL_SCORING_CONCURRENCY } from "@/features/candidate-discovery/config";
@@ -205,7 +206,7 @@ export function ProjectSessionProvider({ children }: { children: ReactNode }) {
       return { id, fileName: file.name, fileType: file.type, fileSize: file.size, duration: null, width: null, height: null, thumbnailUrl: null, status: "selected" as const, createdAt: new Date().toISOString() } satisfies VideoAsset;
     });
     setAssets((current) => [...current, ...createdAssets]);
-    createdAssets.forEach((asset) => { void processAsset(asset.id); });
+    void runAnalysisQueue(createdAssets, () => false, async (asset) => processAsset(asset.id), MAX_LOCAL_VIDEO_PROCESSING_CONCURRENCY);
   }, [processAsset]);
 
   const removeAsset = useCallback((asset: VideoAsset) => {
@@ -340,7 +341,9 @@ export function ProjectSessionProvider({ children }: { children: ReactNode }) {
         setAnalysisJobs((current) => ({ ...current, [segment.id]: { status: "preparing_keyframes", completedUnits, totalUnits } }));
       });
       setAnalysisJobs((current) => ({ ...current, [segment.id]: { status: "sending_to_ai", completedUnits: keyframes.length, totalUnits: keyframes.length } }));
-      const response = await fetch("/api/analyze-segment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ segmentId: segment.id, videoId: segment.videoId, startTime: segment.startTime, endTime: segment.endTime, keyframes, priority: force ? "high" : "normal" }) });
+      const requestBody = JSON.stringify({ segmentId: segment.id, videoId: segment.videoId, startTime: segment.startTime, endTime: segment.endTime, keyframes, priority: force ? "high" : "normal" });
+      if (new TextEncoder().encode(requestBody).byteLength > MAX_ANALYZE_SEGMENT_REQUEST_BYTES) throw new Error("Segment analysis request exceeds the production payload limit.");
+      const response = await fetch("/api/analyze-segment", { method: "POST", headers: { "Content-Type": "application/json" }, body: requestBody });
       if (!response.ok) {
         const data = await response.json() as { error?: string; code?: string };
         throw Object.assign(new Error(data.error ?? "视觉理解请求失败。"), { code: data.code });

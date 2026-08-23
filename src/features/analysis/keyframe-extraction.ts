@@ -3,7 +3,7 @@ import type { SegmentKeyframeInput } from "@/server/vision/vision-analysis-provi
 import { KEYFRAME_JPEG_QUALITY, KEYFRAME_MAX_EDGE } from "./config.ts";
 
 export function selectKeyframeTimestamps(segment: Pick<VideoSegment, "startTime" | "endTime" | "duration">) {
-  const ratios = segment.duration <= 3 ? [0.5] : segment.duration <= 7 ? [0.3, 0.7] : [0.2, 0.5, 0.8];
+  const ratios = segment.duration <= 3 ? [0.5] : [0.25, 0.75];
   return ratios.map((ratio) => Math.min(segment.endTime - 0.01, segment.startTime + segment.duration * ratio));
 }
 
@@ -48,5 +48,7 @@ export async function extractSegmentKeyframes(sourceUrl: string, segment: VideoS
   } finally {
     video.removeAttribute("src");
     video.load();
+    canvas.width = 1;
+    canvas.height = 1;
   }
 }
